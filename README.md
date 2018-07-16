@@ -1,4 +1,4 @@
-# Sound recognition performance verification
+# Speech recognition performance verification
 
 Здесь располагается API технологических испытаний простой верификации для алгоритмов распознавания голоса
 
