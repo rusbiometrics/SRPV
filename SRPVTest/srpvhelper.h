@@ -95,9 +95,8 @@ operator<<(
             return s << "LittleEndian";
         case QAudioFormat::Endian::BigEndian:
             return s << "BigEndian";
-        default:
-            return s << "Unknown";
     }
+    return s << "Unknown";
 }
 
 
@@ -156,8 +155,11 @@ SRPV::SoundRecord readSoundRecord(const QString &_filename, bool _verbose=false)
     }
 
     std::shared_ptr<uint8_t>_sharedptr(new uint8_t[_bytearray.size()], std::default_delete<uint8_t[]>());
-    std::memcpy(_sharedptr.get(), _bytearray.constData(), _bytearray.size());
-    return SRPV::SoundRecord(_bytearray.size() / _format.bytesPerFrame(), _format.channelCount(), _format.sampleSize(), _sharedptr);
+    std::memcpy(_sharedptr.get(), _bytearray.constData(), static_cast<size_t>(_bytearray.size()));
+    return SRPV::SoundRecord(static_cast<uint32_t>(_bytearray.size() / _format.bytesPerFrame()),
+                             static_cast<uint8_t>(_format.channelCount()),
+                             static_cast<uint8_t>(_format.sampleSize()),
+                             _sharedptr);
 }
 
 //---------------------------------------------------
@@ -170,7 +172,7 @@ struct ROCPoint
 
 //---------------------------------------------------
 
-std::vector<ROCPoint> computeROC(uint _points, const std::vector<uint8_t> &_issameperson, size_t _totalpositive, size_t _totalnegative, const std::vector<double> &_similarity)
+std::vector<ROCPoint> computeROC(size_t _points, const std::vector<uint8_t> &_issameperson, size_t _totalpositive, size_t _totalnegative, const std::vector<double> &_similarity)
 {
     std::vector<ROCPoint> _vROC(_points,ROCPoint());
 
@@ -179,7 +181,7 @@ std::vector<ROCPoint> computeROC(uint _points, const std::vector<uint8_t> &_issa
     const double _simstep = (_maxsim - _minsim)/_points;
 
     #pragma omp parallel for
-    for(int i = 0; i < (int)_points; ++i) {
+    for(int i = 0; i < static_cast<int>(_points); ++i) {
         const double _thresh = _minsim + i*_simstep;
         uint8_t _same;
         size_t  _truepositive = 0, _truenegative = 0;
@@ -233,6 +235,20 @@ QJsonArray serializeROC(const std::vector<ROCPoint> &_roc)
         _jsonarr.push_back(qMove(_jsonobj));
     }
     return _jsonarr;
+}
+
+//--------------------------------------------------
+void showTimeConsumption(qint64 secondstotal)
+{
+    qint64 days    = secondstotal / 86400;
+    qint64 hours   = (secondstotal - days * 86400) / 3600;
+    qint64 minutes = (secondstotal - days * 86400 - hours * 3600) / 60;
+    qint64 seconds = secondstotal - days * 86400 - hours * 3600 - minutes * 60;
+    std::cout << std::endl << "Test has been complited successfully" << std::endl
+              << " It took: " << days << " days "
+              << hours << " hours "
+              << minutes << " minutes and "
+              << seconds << " seconds" << std::endl;
 }
 
 #endif // IRPVHELPER_H
