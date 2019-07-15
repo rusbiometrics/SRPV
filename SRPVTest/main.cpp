@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     indir.setPath("");
     outdir.setPath("");
     size_t vtpp = 1, etpp = 1, rocpoints = 512;
-    bool verbose = false, rewriteoutput = false;
+    bool verbose = false, rewriteoutput = false, shuffletemplates = false;
     QString apiresourcespath;
     // If no args passed, show help
     if(argc == 1) {
@@ -27,7 +27,8 @@ int main(int argc, char *argv[])
                   << "\t-v - set how namy verification templates per person should be created (default: 1)" << std::endl
                   << "\t-e - set how namy enrollment templates per person should be created (default: 1)" << std::endl
                   << "\t-p - set how many points for ROC curve should be computed (default: 512)" << std::endl
-                  << "\t-s - be more verbose (basically print all measurements)" << std::endl
+                  << "\t-b - be more verbose (basically print all measurements)" << std::endl
+                  << "\t-s - shuffle templates before matching" << std::endl
                   << "\t-w - force output file to be rewritten if already existed" << std::endl;
         return 0;
     }
@@ -52,8 +53,11 @@ int main(int argc, char *argv[])
             case 'p':
                     rocpoints = QString(++(*argv)).toUInt();
                 break;
-            case 's':
+            case 'b':
                     verbose = true;
+                break;
+            case 's':
+                    shuffletemplates = true;
                 break;
             case 'w':
                     rewriteoutput = true;
@@ -231,6 +235,13 @@ int main(int argc, char *argv[])
               << "  Total: " << vtemplates.size() << std::endl
               << "  Errors:  " << vterrors << std::endl
               << "  Avgtime: " << 1e-6 * vtgentime << " ms" << std::endl;
+
+    // Optional shuffle enrollment templates to prevent attacks on system
+    if(shuffletemplates) {
+        std::srand ( unsigned ( std::time(0) ) );
+        std::cout << std::endl << "Shuffling templates" << std::endl;
+        std::random_shuffle(etemplates.begin(),etemplates.end());
+    }
 
     // Ok, templates are ready, so we can start to match them
     std::cout << std::endl << "Stage 4 - templates match" << std::endl;
